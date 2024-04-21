@@ -1,14 +1,33 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
-from .forms import CustomUserChangeForm, CustomUserCreationForm
 from .models import CustomUser
+from django.contrib.auth.admin import UserAdmin
+from django.forms import CharField, Textarea, TextInput
+from django import forms
+from django.db import models
 
-class CustomUserAdmin(UserAdmin):
-    add_form = CustomUserCreationForm
-    form = CustomUserChangeForm
+# Register your models here.
+
+class UserAdminConfig(UserAdmin):
     model = CustomUser
-    list_display = ['email','username','is_staff','age', 'date_of_birth', 'phone_number', 'address', 'gender']
-    fieldsets = UserAdmin.fieldsets + ((None, {"fields": ('age', 'date_of_birth', 'phone_number', 'address', 'gender',)}),)
-    add_fieldsets = UserAdmin.add_fieldsets + ((None, {"fields": ('age', 'date_of_birth', 'phone_number', 'address', 'gender',)}),)
-
-admin.site.register(CustomUser, CustomUserAdmin)
+    search_fields = ('email','username', 'first_name',)
+    list_filter = ('email','username', 'first_name', 'is_active', 'is_staff',)
+    ordering = ('-start_date',)
+    list_display = ('id','email','username', 'first_name','last_name', 'is_active', 'is_staff',)
+    fieldsets = (
+        (None, {'fields':('email','username', 'first_name',)}),
+        ('Permissions',{'fields':('is_active', 'is_staff',)}),
+        ('Personal',{'fields':('about','profile_image')})
+    )
+    
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(attrs={'rows':20, 'cols':60})}
+    }
+    
+    add_fieldsets = (
+        (None, {
+            'classes':("wide",),
+            'fields':('email','username','first_name','last_name','password1','password2','is_active','is_staff',)
+            }),
+        )
+    
+admin.site.register(CustomUser, UserAdminConfig)

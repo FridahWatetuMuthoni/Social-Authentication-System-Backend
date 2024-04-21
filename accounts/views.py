@@ -1,35 +1,62 @@
-from allauth.socialaccount.providers.twitter.views import TwitterOAuthAdapter
-from dj_rest_auth.registration.views import SocialLoginView
-from dj_rest_auth.social_serializers import TwitterLoginSerializer
-from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
-from allauth.socialaccount.providers.oauth2.client import OAuth2Client
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import RedirectView
-from rest_framework.views import APIView
+from rest_framework.views  import APIView
+from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework import status
 from rest_framework.response import Response
-from .models import CustomUser
-class GenderChoices(APIView):
-    def get(self, request):
-        choices = CustomUser.GENDER_CHOICES
-        return Response(choices)
+from allauth.socialaccount.providers.facebook.views import FacebookOAuth2Adapter
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
+from dj_rest_auth.registration.views import SocialLoginView
+from .serializers import UserSerializer
+from django.contrib.auth import get_user_model
+from django.http import Http404
+from rest_framework.permissions import IsAuthenticated
+# from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 
 
-# class UserRedirectView(LoginRequiredMixin, RedirectView):
-#     """
-#     This view is needed by the dj-rest-auth-library in order to work the google login. It's a bug.
-#     """
+# Create your views here.
 
-#     permanent = False
-
-#     def get_redirect_url(self):
-#         return 'http://127.0.0.1:5173'
+User = get_user_model()
 
 
-class TwitterLogin(SocialLoginView):
-    serializer_class = TwitterLoginSerializer
-    adapter_class = TwitterOAuthAdapter
+class FacebookLogin(SocialLoginView):
+    adapter_class = FacebookOAuth2Adapter
+
 
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
-    callback_url = 'http://127.0.0.1:5173'
-    client_class = OAuth2Client
+
+
+class BlackListRefreshTokenView(APIView):
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        try:
+            refresh_token = request.data['refresh']
+            print(refresh_token)
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response(status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+class UserView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get_object(self, pk):
+        try:
+            return User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk, format=None):
+        user = self.get_object(pk)
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+    
+    def put(self, request, pk, format=None):
+        user = self.get_object(pk)
+        serializer = UserSerializer(user, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
