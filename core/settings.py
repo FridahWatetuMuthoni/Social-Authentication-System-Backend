@@ -31,7 +31,9 @@ DEBUG = env.bool("DEBUG", default=False)
 
 
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'https://social-authentication-system-backend.onrender.com/'
+]
 
 
 # Application definition
