@@ -32,7 +32,10 @@ DEBUG = env.bool("DEBUG", default=False)
 
 
 ALLOWED_HOSTS = [
-    'social-authentication-system-backend.onrender.com'
+    'authentication-system-y5nj.onrender.com',
+    'localhost',
+    '127.0.0.1',
+    'authentication-system-application.netlify.app'
 ]
 
 
